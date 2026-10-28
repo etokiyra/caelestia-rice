@@ -1,0 +1,11 @@
+{
+    "sizes": {
+        "bar": {
+            "innerWidth": 44
+        },
+        "launcher": {
+            "itemWidth": 640,
+            "itemHeight": 58
+        }
+    }
+}

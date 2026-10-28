@@ -1,0 +1,85 @@
+{
+    "services": {
+        "weatherUnits": "Celsius",
+        "sensorUnits": "Celsius",
+        "clockFormat": "TwentyFourHour"
+    },
+    "appearance": {
+        "deformScale": 1.15,
+        "rounding": {
+            "scale": 1.3
+        },
+        "spacing": {
+            "scale": 1.05
+        },
+        "padding": {
+            "scale": 1.05
+        },
+        "font": {
+            "scale": 1.0,
+            "clock": "Rubik",
+            "workspaces": "Rubik",
+            "mono": {
+                "family": "JetBrainsMono Nerd Font"
+            }
+        },
+        "anim": {
+            "durations": {
+                "scale": 0.9
+            }
+        },
+        "transparency": {
+            "enabled": true,
+            "base": 0.28,
+            "layers": 0.16
+        }
+    },
+    "border": {
+        "thickness": 10,
+        "rounding": 32,
+        "smoothing": 28
+    },
+    "bar": {
+        "persistent": true,
+        "workspaces": {
+            "shown": 5,
+            "occupiedBg": true,
+            "showWindows": true,
+            "activeTrail": true
+        },
+        "activeWindow": {
+            "compact": true
+        },
+        "tray": {
+            "background": true
+        },
+        "clock": {
+            "background": true,
+            "showDate": true,
+            "showIcon": false,
+            "showSeconds": false
+        }
+    },
+    "background": {
+        "desktopClock": {
+            "enabled": true,
+            "scale": 0.7,
+            "position": "bottom-left",
+            "invertColors": false,
+            "background": {
+                "enabled": true,
+                "opacity": 0.4,
+                "blur": true
+            },
+            "shadow": {
+                "enabled": true,
+                "opacity": 0.55,
+                "blur": 0.6
+            }
+        }
+    },
+    "lock": {
+        "useWallpaper": true,
+        "recolourLogo": true
+    }
+}
