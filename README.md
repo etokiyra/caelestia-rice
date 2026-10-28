@@ -90,20 +90,20 @@ installs D-Bus activation alone will not start it.
 ### Login manager (Artix/dinit: greetd + tuigreet)
 
 The repo ships the greetd config used on the source machine
-(`configs/greetd/config.toml`): tuigreet with time, user menu, remembered
-last session and an olive-gold theme, launching `/usr/bin/start-hyprland`.
-On Artix/dinit, install it and swap out LightDM with:
+(`configs/greetd/config.toml`): tuigreet with clock and remembered username,
+launching `start-hyprland` on **VT 7**. VT 7 matters: Artix runs gettys on
+tty1–tty6, and a greetd on VT 1 will fight `agetty` for the terminal.
 
 ```sh
-sudo ./setup-greetd.sh
+sudo ./setup-greetd.sh          # or: --dry-run first
 sudo reboot
 ```
 
-The script disables LightDM, installs `greetd greetd-tuigreet greetd-dinit`
-(pacman replaces `lightdm-dinit`), copies the config to
-`/etc/greetd/config.toml` and enables the `greetd` dinit service. It does not
-touch the running session — reboot to reach the new greeter. Rollback from a
-TTY:
+The script removes `lightdm-dinit` explicitly, installs
+`greetd greetd-tuigreet greetd-dinit`, writes `/etc/greetd/config.toml` with
+the chosen VT (`--vt N`, default 7) and enables the `greetd` dinit service.
+It never starts greetd inside the running session, so nothing fights over the
+current VT. Rollback from a TTY:
 
 ```sh
 sudo dinitctl disable greetd
@@ -112,17 +112,23 @@ sudo dinitctl enable lightdm
 sudo reboot
 ```
 
+If you must use a VT below 7, remove that VT from `ACTIVE_CONSOLES` in
+`/etc/dinit.d/config/console.conf` first.
+
 ### Networking (Artix/dinit: ConnMan → NetworkManager)
 
-`networkmanager-dinit` provides the `NetworkManager` service (capital N). To
-replace ConnMan:
+`networkmanager-dinit` provides the `NetworkManager` service (capital N).
+Install it **before** stopping ConnMan, otherwise pacman cannot download it:
 
 ```sh
+sudo pacman -S --needed networkmanager-dinit   # while still online
 sudo dinitctl disable connmand && sudo dinitctl stop connmand
-sudo pacman -S --needed networkmanager-dinit
 sudo dinitctl enable NetworkManager && sudo dinitctl start NetworkManager
 nmtui   # or: nmcli device wifi connect "SSID" password "…"
 ```
+
+Or run `sudo ./setup-network.sh`, which does the same checks in the right
+order and is a no-op once NetworkManager is already active.
 
 ConnMan's saved Wi-Fi profiles are not imported (they live root-only in
 `/var/lib/connman`); reconnect once and NM stores the keyring entry.

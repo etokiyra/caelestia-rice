@@ -2,14 +2,13 @@
 # Installed by ./setup-greetd.sh (root); see README.
 
 [terminal]
-# VT the greeter runs on. 1 is free on a default Artix install.
-vt = 1
+# greetd owns this VT. 7 is the safe choice on Artix: gettys are configured
+# for tty1–tty6, so nothing else competes for tty7. Do not use a VT that has
+# a getty on it (tty1 used to fight greetd here).
+vt = 7
 
 [default_session]
-# tuigreet in the olive-gold accent, launching Hyprland via start-hyprland.
-# tuigreet's own session menu additionally lists every entry in
-# /usr/share/wayland-sessions (Hyprland is the only one here).
-# greetd runs this through `/bin/sh -c`, so the theme value is single-quoted
-# to keep its semicolons away from the shell.
-command = "tuigreet --time --remember --remember-user-session --user-menu --asterisks --theme 'border=darkyellow;text=white;prompt=darkyellow;time=darkyellow;action=darkyellow;button=darkyellow;container=black;input=white' --cmd /usr/bin/start-hyprland"
+# tuigreet launches Hyprland directly. greetd runs this through `/bin/sh -c`,
+# so quote any argument that contains shell metacharacters.
+command = "tuigreet --time --remember --asterisks --cmd start-hyprland"
 user = "greeter"
