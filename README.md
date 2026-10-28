@@ -33,8 +33,8 @@ configs/
 ├── caelestia/                Caelestia shell + Hyprland user config
 │   ├── shell.json            transparency, border/corner, bar entries, clock, lock screen
 │   ├── shell-tokens.json     bar width, launcher item sizes
-│   ├── hypr-vars.lua         editor/browser/cursor theme settings
-│   ├── hypr-user.lua         env + session services
+│   ├── hypr-vars.lua         editor/browser/file manager/cursor settings
+│   ├── hypr-user.lua         per-session services
 │   └── monitors/eDP-1/       per-monitor shell settings
 ├── fastfetch/config.jsonc    the fetch shown in the terminal greeting
 ├── foot/foot.ini             glassy terminal
@@ -76,14 +76,18 @@ Repo packages:
 > starship grim slurp swappy wl-clipboard cliphist trash-cli polkit-gnome
 > gnome-keyring gammastep geoclue bluez-utils networkmanager brightnessctl ddcutil
 > libcava libqalculate power-profiles-daemon dart-sass ttf-jetbrains-mono-nerd
-> ttf-material-symbols-variable ttf-rubik-vf ttf-cascadia-code-nerd qt6ct
+> ttf-material-symbols-variable ttf-rubik-vf ttf-cascadia-code-nerd
 > papirus-icon-theme dolphin eza zoxide direnv lazygit
 
 AUR packages (paru/yay):
 
-> caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git gpu-screen-recorder
+> caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder
 
-Everything else (terminal fonts/icons, pipewire session, portais) comes with
+`./install.sh` also enables `power-profiles-daemon` in systemd/dinit when it
+finds it. The Caelestia battery panel needs that daemon; on non-systemd
+installs D-Bus activation alone will not start it.
+
+Everything else (terminal fonts/icons, pipewire session, portals) comes with
 `caelestia install` if you prefer the official base first — in that case run
 it **before** `./install.sh` so the riced files win.
 
@@ -108,7 +112,7 @@ it **before** `./install.sh` so the riced files win.
 - Shell glass strength: `configs/caelestia/shell.json` → `appearance.transparency.base` / `.layers`
 - Terminal glass: `configs/foot/foot.ini` → `alpha` / `alpha-mode`
 - Blur cost vs. looks: `configs/hypr/variables.lua` → `blurXray`, `blurPasses`, `blurSize`
-- Border gradient/rounding: `configs/hypr/variables.lua` → `windowActiveBorderColor` / `windowRoundingScale`
+- Border gradient/rounding: `configs/hypr/variables.lua` → `activeWindowBorderColour` / `windowRoundingPower`
 - Per-app exceptions: `configs/hypr/hyprland/rules.lua`
 
 ## Credits

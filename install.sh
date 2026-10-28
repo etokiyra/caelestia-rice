@@ -55,10 +55,10 @@ REPO_PKGS=(
     btop htop cava
     ttf-jetbrains-mono-nerd ttf-material-symbols-variable
     ttf-rubik-vf ttf-cascadia-code-nerd
-    qt6ct papirus-icon-theme dolphin
+    papirus-icon-theme dolphin
     eza zoxide direnv lazygit
 )
-AUR_PKGS=(caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git gpu-screen-recorder)
+AUR_PKGS=(caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder)
 
 install_packages() {
     command -v pacman >/dev/null 2>&1 || {
@@ -89,6 +89,23 @@ install_packages() {
 }
 
 $WITH_PACKAGES && install_packages
+
+# ---------------------------------------------------------------- services --
+# Caelestia's battery panel talks to power-profiles-daemon. On non-systemd
+# installs the packaged D-Bus service is often a /bin/false stub, so the
+# daemon has to be enabled in the init system explicitly.
+if [ -x /usr/lib/power-profiles-daemon ] || command -v power-profiles-daemon >/dev/null 2>&1; then
+    if [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
+        info "Enabling power-profiles-daemon (systemd)"
+        run sudo systemctl enable --now power-profiles-daemon || warn "could not enable power-profiles-daemon"
+    elif command -v dinitctl >/dev/null 2>&1 && [ -f /etc/dinit.d/power-profiles-daemon ]; then
+        info "Enabling power-profiles-daemon (dinit)"
+        run sudo dinitctl enable power-profiles-daemon || warn "could not enable power-profiles-daemon"
+        run sudo dinitctl start power-profiles-daemon || warn "power-profiles-daemon may already be running"
+    else
+        warn "enable power-profiles-daemon with your init system (battery power profiles need it)"
+    fi
+fi
 
 # ------------------------------------------------------------------ backup --
 TARGETS=(
@@ -127,9 +144,6 @@ run cp -a "$SCRIPT_DIR/configs/fuzzel"      "$XDG_CONFIG_HOME/fuzzel"
 run cp -a "$SCRIPT_DIR/configs/fastfetch"   "$XDG_CONFIG_HOME/fastfetch"
 run cp -a "$SCRIPT_DIR/configs/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 run rm -f "$HOME/.bashrc" && run cp -a "$SCRIPT_DIR/configs/bash/.bashrc" "$HOME/.bashrc"
-
-# Portable-ify the one hard-coded user path.
-run sed -i "s|/home/kiyra|$HOME|g" "$XDG_CONFIG_HOME/caelestia/hypr-user.lua"
 
 info "Installing helper scripts to $HOME/.local/bin"
 run mkdir -p "$HOME/.local/bin"

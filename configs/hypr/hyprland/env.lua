@@ -2,6 +2,9 @@ local vars = require("variables")
 
 -- Themes
 hl.env("QT_QPA_PLATFORMTHEME", "qtengine")
+-- Some distros export an invalid QT_STYLE_OVERRIDE=gtk (e.g. via /etc/environment).
+-- Clear it so Qt apps don't print "invalid style override 'gtk'".
+hl.env("QT_STYLE_OVERRIDE", "")
 hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
 hl.env("XCURSOR_THEME", vars.cursorTheme)
