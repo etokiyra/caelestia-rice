@@ -1,0 +1,15 @@
+# /etc/greetd/config.toml — greetd + tuigreet login for the Caelestia rice.
+# Installed by ./setup-greetd.sh (root); see README.
+
+[terminal]
+# VT the greeter runs on. 1 is free on a default Artix install.
+vt = 1
+
+[default_session]
+# tuigreet in the olive-gold accent, launching Hyprland via start-hyprland.
+# tuigreet's own session menu additionally lists every entry in
+# /usr/share/wayland-sessions (Hyprland is the only one here).
+# greetd runs this through `/bin/sh -c`, so the theme value is single-quoted
+# to keep its semicolons away from the shell.
+command = "tuigreet --time --remember --remember-user-session --user-menu --asterisks --theme 'border=darkyellow;text=white;prompt=darkyellow;time=darkyellow;action=darkyellow;button=darkyellow;container=black;input=white' --cmd /usr/bin/start-hyprland"
+user = "greeter"

@@ -87,6 +87,46 @@ AUR packages (paru/yay):
 finds it. The Caelestia battery panel needs that daemon; on non-systemd
 installs D-Bus activation alone will not start it.
 
+### Login manager (Artix/dinit: greetd + tuigreet)
+
+The repo ships the greetd config used on the source machine
+(`configs/greetd/config.toml`): tuigreet with time, user menu, remembered
+last session and an olive-gold theme, launching `/usr/bin/start-hyprland`.
+On Artix/dinit, install it and swap out LightDM with:
+
+```sh
+sudo ./setup-greetd.sh
+sudo reboot
+```
+
+The script disables LightDM, installs `greetd greetd-tuigreet greetd-dinit`
+(pacman replaces `lightdm-dinit`), copies the config to
+`/etc/greetd/config.toml` and enables the `greetd` dinit service. It does not
+touch the running session — reboot to reach the new greeter. Rollback from a
+TTY:
+
+```sh
+sudo dinitctl disable greetd
+sudo pacman -S --needed lightdm-dinit
+sudo dinitctl enable lightdm
+sudo reboot
+```
+
+### Networking (Artix/dinit: ConnMan → NetworkManager)
+
+`networkmanager-dinit` provides the `NetworkManager` service (capital N). To
+replace ConnMan:
+
+```sh
+sudo dinitctl disable connmand && sudo dinitctl stop connmand
+sudo pacman -S --needed networkmanager-dinit
+sudo dinitctl enable NetworkManager && sudo dinitctl start NetworkManager
+nmtui   # or: nmcli device wifi connect "SSID" password "…"
+```
+
+ConnMan's saved Wi-Fi profiles are not imported (they live root-only in
+`/var/lib/connman`); reconnect once and NM stores the keyring entry.
+
 Everything else (terminal fonts/icons, pipewire session, portals) comes with
 `caelestia install` if you prefer the official base first — in that case run
 it **before** `./install.sh` so the riced files win.
