@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# Kiyra's Caelestia rice — one-shot installer for a fresh (Artix/Arch) system.
+# Kiyra's Caelestia rice — one-shot installer for EndeavourOS (Arch + systemd).
 #
-#   ./install.sh              apply the rice: configs, wallpaper, cursor, scheme
+#   ./install.sh              apply the rice: configs, wallpaper, cursor
 #   ./install.sh --packages   also install the required pacman/AUR packages
 #   ./install.sh --dry-run    print what would happen, change nothing
 #   ./install.sh --no-backup  don't back up the existing configs
 #
-# Everything replaced by this script is backed up to
-# ~/.config-backup-rice-<timestamp>/ (unless --no-backup).
+# Everything this script replaces is backed up to
+# ~/.config-backup-rice-<timestamp>/ (unless --no-backup), so nothing is
+# clobbered. Never touches the shell choice: fish ships its own config.
 
 set -euo pipefail
 
@@ -46,32 +47,40 @@ $DRY_RUN && warn "dry run — nothing will be changed"
 
 # ---------------------------------------------------------------- packages --
 REPO_PKGS=(
+    fish
     hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk
     foot fuzzel fastfetch starship
     grim slurp swappy wl-clipboard cliphist trash-cli
     polkit-gnome gnome-keyring gammastep geoclue bluez-utils
-    networkmanager brightnessctl ddcutil libcava libqalculate
+    networkmanager brightnessctl ddcutil libqalculate
     power-profiles-daemon dart-sass psmisc
-    btop htop cava
+    btop cava
     ttf-jetbrains-mono-nerd ttf-material-symbols-variable
     ttf-rubik-vf ttf-cascadia-code-nerd
-    papirus-icon-theme dolphin
+    papirus-icon-theme thunar
     eza zoxide direnv lazygit
 )
 AUR_PKGS=(caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder)
 
 install_packages() {
     command -v pacman >/dev/null 2>&1 || {
-        warn "pacman not found — --packages targets Arch/Artix, install manually (see README)"
+        warn "pacman not found — install the packages from the README manually"
         return 0
     }
 
-    info "Installing repo packages (may ask for your password)"
-    local p
+    # One batched call instead of one per package: a single password prompt
+    # and --needed skips everything already installed.
+    local missing=() p
     for p in "${REPO_PKGS[@]}"; do
-        pacman -Q "$p" >/dev/null 2>&1 && continue
-        run sudo pacman -S --needed "$p" || warn "could not install: $p"
+        pacman -Q "$p" >/dev/null 2>&1 || missing+=("$p")
     done
+    if [ ${#missing[@]} -gt 0 ]; then
+        info "Installing ${#missing[@]} repo package(s) (may ask for your password)"
+        run sudo pacman -S --needed "${missing[@]}" \
+            || warn "some repo packages failed to install, see the output above"
+    else
+        info "All repo packages are already installed"
+    fi
 
     local helper=""
     if command -v paru >/dev/null 2>&1; then helper="paru"
@@ -81,33 +90,47 @@ install_packages() {
         return 0
     fi
 
-    info "Installing AUR packages with $helper"
+    local aur_missing=()
     for p in "${AUR_PKGS[@]}"; do
-        pacman -Q "$p" >/dev/null 2>&1 && continue
-        run "$helper" -S --needed "$p" || warn "could not install: $p"
+        pacman -Q "$p" >/dev/null 2>&1 || aur_missing+=("$p")
     done
+    if [ ${#aur_missing[@]} -gt 0 ]; then
+        info "Installing ${#aur_missing[@]} AUR package(s) with $helper"
+        run "$helper" -S --needed "${aur_missing[@]}" \
+            || warn "some AUR packages failed to install, see the output above"
+    else
+        info "All AUR packages are already installed"
+    fi
 }
 
 $WITH_PACKAGES && install_packages
 
 # ---------------------------------------------------------------- services --
-# Caelestia's battery panel talks to power-profiles-daemon. On non-systemd
-# installs the packaged D-Bus service is often a /bin/false stub, so the
-# daemon has to be enabled in the init system explicitly.
-if [ -x /usr/lib/power-profiles-daemon ] || command -v power-profiles-daemon >/dev/null 2>&1; then
-    if [ -d /run/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
-        info "Enabling power-profiles-daemon (systemd)"
-        run sudo systemctl enable --now power-profiles-daemon || warn "could not enable power-profiles-daemon"
-    elif command -v dinitctl >/dev/null 2>&1 && [ -f /etc/dinit.d/power-profiles-daemon ]; then
-        info "Enabling power-profiles-daemon (dinit)"
-        run sudo dinitctl enable power-profiles-daemon || warn "could not enable power-profiles-daemon"
-        run sudo dinitctl start power-profiles-daemon || warn "power-profiles-daemon may already be running"
+# Everything runs systemd on EndeavourOS; both services are usually already
+# enabled, so these are no-ops after the first run. The Caelestia battery
+# panel reads power profiles from power-profiles-daemon.
+if command -v systemctl >/dev/null 2>&1 \
+   && pacman -Q power-profiles-daemon >/dev/null 2>&1; then
+    if systemctl is-enabled --quiet power-profiles-daemon 2>/dev/null; then
+        info "power-profiles-daemon is already enabled"
     else
-        warn "enable power-profiles-daemon with your init system (battery power profiles need it)"
+        info "Enabling power-profiles-daemon (systemd)"
+        run sudo systemctl enable --now power-profiles-daemon \
+            || warn "could not enable power-profiles-daemon"
+    fi
+
+    if systemctl is-enabled --quiet NetworkManager 2>/dev/null; then
+        info "NetworkManager is already enabled"
+    else
+        info "Enabling NetworkManager (systemd)"
+        run sudo systemctl enable --now NetworkManager \
+            || warn "could not enable NetworkManager"
     fi
 fi
 
 # ------------------------------------------------------------------ backup --
+# Everything the installer writes to. Backed up before anything is touched,
+# so rolling back is just copying the backup contents back in place.
 TARGETS=(
     "$XDG_CONFIG_HOME/caelestia"
     "$XDG_CONFIG_HOME/hypr"
@@ -115,7 +138,8 @@ TARGETS=(
     "$XDG_CONFIG_HOME/fuzzel"
     "$XDG_CONFIG_HOME/fastfetch"
     "$XDG_CONFIG_HOME/starship.toml"
-    "$HOME/.bashrc"
+    "$XDG_CONFIG_HOME/fish/config.fish"
+    "$XDG_CONFIG_HOME/fish/functions/fish_greeting.fish"
 )
 BACKUP_DIR="$HOME/.config-backup-rice-$(date +%Y%m%d-%H%M%S)"
 
@@ -128,7 +152,11 @@ if $KEEP_BACKUP; then
         for t in "${present[@]}"; do
             run cp -a "$t" "$BACKUP_DIR/$(basename "$t")"
         done
+    else
+        info "Nothing to back up"
     fi
+else
+    warn "--no-backup: existing configs will be overwritten without a copy"
 fi
 
 # ------------------------------------------------------------------ configs --
@@ -143,7 +171,19 @@ run cp -a "$SCRIPT_DIR/configs/foot"        "$XDG_CONFIG_HOME/foot"
 run cp -a "$SCRIPT_DIR/configs/fuzzel"      "$XDG_CONFIG_HOME/fuzzel"
 run cp -a "$SCRIPT_DIR/configs/fastfetch"   "$XDG_CONFIG_HOME/fastfetch"
 run cp -a "$SCRIPT_DIR/configs/starship/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
-run rm -f "$HOME/.bashrc" && run cp -a "$SCRIPT_DIR/configs/bash/.bashrc" "$HOME/.bashrc"
+
+# Shell is the login shell — the rice ships a fish config, never a .bashrc.
+run mkdir -p "$XDG_CONFIG_HOME/fish"
+run cp -a "$SCRIPT_DIR/configs/fish/config.fish" "$XDG_CONFIG_HOME/fish/config.fish"
+# The greeting lives in fish's autoload dir, exactly like upstream caelestia.
+run mkdir -p "$XDG_CONFIG_HOME/fish/functions"
+run cp -a "$SCRIPT_DIR/configs/fish/functions/fish_greeting.fish" \
+          "$XDG_CONFIG_HOME/fish/functions/fish_greeting.fish"
+
+if ! [ -f "$XDG_CONFIG_HOME/caelestia/user-config.fish" ]; then
+    run printf '# Add your personal fish configuration here.\n' \
+        > "$XDG_CONFIG_HOME/caelestia/user-config.fish"
+fi
 
 info "Installing helper scripts to $HOME/.local/bin"
 run mkdir -p "$HOME/.local/bin"
@@ -171,35 +211,64 @@ if command -v gsettings >/dev/null 2>&1; then
     run gsettings set org.gnome.desktop.interface cursor-theme "$CURSOR_THEME"
     run gsettings set org.gnome.desktop.interface cursor-size 24
 else
-    warn "gsettings not found (GNOME not fully installed?) — set the cursor theme manually"
+    warn "gsettings not found — set the cursor theme manually"
 fi
 
 # -------------------------------------------------------- wallpaper/scheme --
-WALL_FILE="wallhaven-qrgqyq.jpg"
-WALL_DIR="$HOME/Pictures/Wallpapers"
-info "Installing wallpaper to $WALL_DIR"
-run mkdir -p "$WALL_DIR"
-run cp -a "$SCRIPT_DIR/wallpapers/$WALL_FILE" "$WALL_DIR/"
+# Colors are NOT pinned: Caelestia's dynamic scheme derives its palette from
+# whichever wallpaper is active, so switching wallpapers re-themes everything
+# automatically. The installer only adds the wallpapers to the pool and picks
+# one on a fresh machine (when Caelestia has no wallpaper set yet).
+run mkdir -p "$HOME/Pictures/Wallpapers"
+info "Installing wallpapers to $HOME/Pictures/Wallpapers"
+for w in "$SCRIPT_DIR"/wallpapers/*; do
+    [ -e "$HOME/Pictures/Wallpapers/$(basename "$w")" ] \
+        || run cp -a "$w" "$HOME/Pictures/Wallpapers/"
+done
 
 if command -v caelestia >/dev/null 2>&1; then
-    info "Applying the wallpaper"
-    run caelestia wallpaper -f "$WALL_DIR/$WALL_FILE"
-    info "Pinning the olive-gold scheme (dynamic/hard/tonalspot, dark)"
-    run caelestia scheme set -n dynamic -f hard -m dark -v tonalspot
+    if [ -s "$HOME/.local/state/caelestia/wallpaper/path.txt" ]; then
+        info "Wallpaper already set ($(cat "$HOME/.local/state/caelestia/wallpaper/path.txt")) — leaving it"
+        info "Switch any time: caelestia wallpaper -f <file> (or the shell's launcher)"
+    else
+        info "No wallpaper set yet — applying wallhaven-qrgqyq.jpg"
+        run caelestia wallpaper -f "$HOME/Pictures/Wallpapers/wallhaven-qrgqyq.jpg"
+    fi
 else
-    warn "caelestia CLI not found — set the wallpaper later with: caelestia wallpaper -f $WALL_DIR/$WALL_FILE"
+    warn "caelestia CLI not found — pick a wallpaper later with: caelestia wallpaper -f <file>"
+fi
+
+# ------------------------------------------------------------------ apply ----
+# A running Caelestia shell caches its config; a straight file swap only
+# reaches it once restarted (the client-side watcher dies with rm -rf).
+# Same for Hyprland: a reload is needed for the new decoration/variables.
+if pgrep -f "qs -c caelestia" >/dev/null 2>&1; then
+    info "Restarting the running Caelestia shell"
+    run caelestia shell -k
+    run setsid caelestia shell -d >/dev/null 2>&1 </dev/null
+fi
+if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && command -v hyprctl >/dev/null 2>&1; then
+    info "Reloading the running Hyprland session"
+    run hyprctl reload
 fi
 
 # -------------------------------------------------------------------- done --
 missing=()
-for cmd in hyprland quickshell caelestia foot fuzzel fastfetch starship; do
+for cmd in hyprland qs caelestia foot fastfetch starship fish; do
     command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
 done
 for m in "${missing[@]:-}"; do
     [ -n "$m" ] && warn "not found: $m (run ./install.sh --packages or install manually)"
 done
 
-info "Done! Next steps:"
-printf '    1. Log out and pick the Caelestia session (or run: caelestia shell -d)\n'
-printf '    2. If already inside Hyprland: hyprctl reload\n'
-printf '    3. New terminals will use the glassy foot config; old ones need a restart\n'
+login_shell="$(getent passwd "$(id -u)" | cut -d: -f7)"
+fish_bin="$(command -v fish)"
+if [ -n "$fish_bin" ] && [ "$login_shell" != "$fish_bin" ] \
+   && [ "$(readlink -f "$login_shell" 2>/dev/null)" != "$(readlink -f "$fish_bin")" ]; then
+    warn "your login shell is $login_shell, not fish — change it with: chsh -s $fish_bin"
+fi
+
+info "Done!"
+printf '    - Fresh machine: log out and pick the Caelestia session\n'
+printf '    - Inside a session: it was already reloaded/restarted by this script\n'
+printf '    - New terminals: fish + greeting + glass all come up on their own\n'
