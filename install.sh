@@ -3,7 +3,7 @@
 # Kiyra's Caelestia rice — one-shot installer for EndeavourOS (Arch + systemd).
 #
 #   ./install.sh              apply the rice: configs, wallpaper, cursor
-#   ./install.sh --packages   also install the required pacman/AUR packages
+#   ./install.sh --packages   also install packages + run `caelestia install`
 #   ./install.sh --dry-run    print what would happen, change nothing
 #   ./install.sh --no-backup  don't back up the existing configs
 #
@@ -60,8 +60,13 @@ REPO_PKGS=(
     papirus-icon-theme thunar
     eza zoxide direnv lazygit
 )
-AUR_PKGS=(caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder)
+AUR_PKGS=(caelestia-cli gpu-screen-recorder)
 
+# Everything else Caelestia needs (caelestia-shell, quickshell, qtengine,
+# fonts, ...) is pulled in by `caelestia install` itself — the upstream
+# installer manages those, so they are NOT listed here.
+
+AUR_HELPER=""
 install_packages() {
     command -v pacman >/dev/null 2>&1 || {
         warn "pacman not found — install the packages from the README manually"
@@ -82,11 +87,10 @@ install_packages() {
         info "All repo packages are already installed"
     fi
 
-    local helper=""
-    if command -v paru >/dev/null 2>&1; then helper="paru"
-    elif command -v yay >/dev/null 2>&1; then helper="yay"
+    if command -v yay >/dev/null 2>&1; then AUR_HELPER="yay"
+    elif command -v paru >/dev/null 2>&1; then AUR_HELPER="paru"
     else
-        warn "no AUR helper (paru/yay) found — install these manually: ${AUR_PKGS[*]}"
+        warn "no AUR helper (yay/paru) found — install these manually: ${AUR_PKGS[*]}"
         return 0
     fi
 
@@ -95,8 +99,8 @@ install_packages() {
         pacman -Q "$p" >/dev/null 2>&1 || aur_missing+=("$p")
     done
     if [ ${#aur_missing[@]} -gt 0 ]; then
-        info "Installing ${#aur_missing[@]} AUR package(s) with $helper"
-        run "$helper" -S --needed "${aur_missing[@]}" \
+        info "Installing ${#aur_missing[@]} AUR package(s) with $AUR_HELPER"
+        run "$AUR_HELPER" -S --needed "${aur_missing[@]}" \
             || warn "some AUR packages failed to install, see the output above"
     else
         info "All AUR packages are already installed"
@@ -104,6 +108,28 @@ install_packages() {
 }
 
 $WITH_PACKAGES && install_packages
+
+# ------------------------------------------------------------- caelestia ----
+# Instead of installing the Caelestia stack by hand, let the upstream CLI
+# installer do it: it installs caelestia-shell + quickshell + theme engines
+# and deploys its base dots. This script then overwrites the config files
+# with the rice's on the next step. Its status lives in
+# ~/.local/state/caelestia/dots-state.json — once present, re-runs skip
+# straight here and future updates go through `caelestia update`.
+if command -v caelestia >/dev/null 2>&1; then
+    if [ -f "$HOME/.local/state/caelestia/dots-state.json" ]; then
+        info "Caelestia dotfiles already installed — skipping caelestia install"
+        info "Pull in upstream changes any time with: caelestia update"
+    else
+        info "Installing the Caelestia dotfiles: caelestia install (defaults, non-interactive)"
+        installer_args=(--noconfirm)
+        [ -n "$AUR_HELPER" ] && installer_args+=(--aur-helper "$AUR_HELPER")
+        run caelestia install "${installer_args[@]}" \
+            || warn "caelestia install failed — run it manually to finish the setup"
+    fi
+elif $WITH_PACKAGES; then
+    warn "caelestia CLI not installed — cannot run caelestia install; set up manually"
+fi
 
 # ---------------------------------------------------------------- services --
 # Everything runs systemd on EndeavourOS; both services are usually already

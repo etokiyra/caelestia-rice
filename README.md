@@ -64,7 +64,9 @@ install.sh    the installer (EndeavourOS/Arch + systemd)
 git clone git@github.com:etokiyra/caelestia-rice.git
 cd caelestia-rice
 
-# 1. Requirements — one batched pacman call + AUR helper pass, skips installed
+# 1. Requirements + Caelestia itself — pacman pass, then yay -S caelestia-cli
+#    gpu-screen-recorder, then the upstream `caelestia install` (skips
+#    everything already installed)
 ./install.sh --packages
 
 # 2. Apply the rice
@@ -119,9 +121,16 @@ Repo packages:
 > btop cava ttf-jetbrains-mono-nerd ttf-material-symbols-variable ttf-rubik-vf
 > ttf-cascadia-code-nerd papirus-icon-theme thunar eza zoxide direnv lazygit
 
-AUR packages (paru/yay):
+AUR packages (yay/paru):
 
-> caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder
+> caelestia-cli gpu-screen-recorder
+
+The rest of the stack — `caelestia-shell`, `quickshell`, `qtengine`, fonts and
+the base deployment of the Caelestia dots — is installed by the upstream CLI
+itself: `--packages` runs `caelestia install --noconfirm` right after `yay` (it
+supports `paru` too). On re-runs the installer detects
+`~/.local/state/caelestia/dots-state.json` and skips straight ahead; to pull in
+upstream changes later use `caelestia update`.
 
 ## Notes
 
