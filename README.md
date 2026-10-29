@@ -11,6 +11,7 @@
   <img alt="compositor" src="https://img.shields.io/badge/Hyprland-0.55%2B%20Lua%20config-1a96c9?style=flat-square">
   <img alt="shell" src="https://img.shields.io/badge/fish-login%20shell-00a67d?style=flat-square">
   <img alt="shell ui" src="https://img.shields.io/badge/Caelestia%20shell-2.5-ae4bd1?style=flat-square">
+  <img alt="license" src="https://img.shields.io/badge/license-The%20Unlicense-6a737d?style=flat-square">
 </p>
 
 ![desktop](screenshots/01-desktop.png)
