@@ -1,8 +1,17 @@
 # caelestia-rice
 
-Kiyra's Void Linux → Artix rice: **Caelestia shell + Hyprland (Lua config)** with
-a heavy frosted-glass look over the olive-gold dynamic scheme derived from the
-wallpaper.
+<p align="center">
+  <b>Kiyra's EndeavourOS rice</b> — Caelestia shell + Hyprland (Lua config)<br>
+  heavy frosted glass, <b>zero pinned colors</b>: the dynamic scheme re-themes<br>
+  the whole desktop from whichever wallpaper is active.
+</p>
+
+<p align="center">
+  <img alt="platform" src="https://img.shields.io/badge/EndeavourOS-Arch%20%2B%20systemd-606ca8?style=flat-square">
+  <img alt="compositor" src="https://img.shields.io/badge/Hyprland-0.55%2B%20Lua%20config-1a96c9?style=flat-square">
+  <img alt="shell" src="https://img.shields.io/badge/fish-login%20shell-00a67d?style=flat-square">
+  <img alt="shell ui" src="https://img.shields.io/badge/Caelestia%20shell-2.5-ae4bd1?style=flat-square">
+</p>
 
 ![desktop](screenshots/01-desktop.png)
 
@@ -13,145 +22,124 @@ wallpaper.
 | Shell transparency | `configs/caelestia/shell.json` | `base 0.28`, `layers 0.16` — launcher, dashboard, sidebar, OSD are all see-through glass |
 | Shell blur over windows | `configs/hypr/variables.lua` | `blurXray = false`, size 10, passes 2 — panels frost whatever is behind them |
 | Glass terminal | `configs/foot/foot.ini` | `alpha 0.68`, `alpha-mode all`, `blur yes` + Hyprland rule `opacity = "0.85 0.8"` for class `foot` |
-| Launcher (fuzzel) | `configs/fuzzel/fuzzel.ini` | centered glass background, solid gold selection |
-| Borders | `configs/hypr/variables.lua` | 2px gradient (gold → cream), 20px rounding, deep shadows, gaps 8/16/28 |
+| Borders | `configs/hypr/variables.lua` | 2px gradient, 20px rounding, deep shadows, gaps 8/16/28 |
 | Cursor | `install.sh` | [Bibata-Modern-Ice](https://github.com/ful1e5/Bibata_Cursor) v2.0.7, size 24 |
-| Scheme | `configs/hypr/scheme/` + installer | `dynamic` / `hard` / `tonalspot` / dark, olive-gold palette |
-| Shell extras | `configs/caelestia/shell.json` | desktop clock (glass), wallpaper lock screen, bigger launcher items |
+| Colors | Caelestia dynamic scheme | derived from the active wallpaper — never pinned, switch and watch everything re-theme |
+| Terminal | `configs/foot/foot.ini` | `shell=fish`, starship prompt, caelestia palette sequences, foot prompt-jumping |
+| Shell extras | `configs/caelestia/shell.json` | glass desktop clock, wallpaper lock screen, bigger launcher items |
 | Column bar / animations | `configs/caelestia/shell-tokens.json`, `configs/hypr/hyprland/animations.lua` | narrow 44px glass rail; stock Hyprland animations |
 
 ![launcher](screenshots/02-launcher.png)
 ![dashboard](screenshots/03-dashboard.png)
 ![terminal](screenshots/05-terminal-glass.png)
-![fuzzel](screenshots/06-fuzzel.png)
 
 ## What's in the box
 
 ```
 configs/
-├── bash/.bashrc              starship, direnv, zoxide, eza, ble.sh, caelestia greeting + fastfetch
-├── caelestia/                Caelestia shell + Hyprland user config
-│   ├── shell.json            transparency, border/corner, bar entries, clock, lock screen
-│   ├── shell-tokens.json     bar width, launcher item sizes
-│   ├── hypr-vars.lua         editor/browser/file manager/cursor settings
-│   ├── hypr-user.lua         per-session services
-│   └── monitors/eDP-1/       per-monitor shell settings
-├── fastfetch/config.jsonc    the fetch shown in the terminal greeting
-├── foot/foot.ini             glassy terminal
-├── fuzzel/fuzzel.ini         app launcher / search
-├── hypr/                     full Hyprland Lua config (blur, shadows, gaps, borders, rules, binds)
-└── starship/starship.toml    the prompt
+├── fish/
+│   ├── config.fish             starship, direnv, zoxide, eza, abbrs, palette, prompt-marks
+│   └── functions/
+│       └── fish_greeting.fish  the greeting (verbatim from upstream caelestia)
+├── caelestia/                  Caelestia shell + Hyprland user config
+│   ├── shell.json              transparency, border/corner, bar entries, clock, lock screen
+│   ├── shell-tokens.json       bar width, launcher item sizes
+│   ├── hypr-vars.lua           user prefs only (editor, cursor, sleep gesture)
+│   ├── hypr-user.lua           per-session services
+│   └── monitors/eDP-1/         per-monitor shell settings
+├── fastfetch/config.jsonc      the fetch in the terminal greeting
+├── foot/foot.ini               glassy terminal (shell=fish)
+├── fuzzel/fuzzel.ini           app launcher / search
+├── hypr/                       full Hyprland Lua config (blur, shadows, gaps, borders, rules, binds)
+│   └── variables.lua           app paths & look defaults (browser=firefox, editor, file manager…)
+└── starship/starship.toml      the prompt
 bin/          caelestia-session-services (pipewire stack for the session)
-wallpapers/   wallhaven-qrgqyq.jpg
-install.sh    the installer
+wallpapers/   wallhaven-qrgqyq.jpg · wallhaven-pomg5p.jpg
+install.sh    the installer (EndeavourOS/Arch + systemd)
 ```
 
-## Installing on a fresh Artix/Arch system
+## Installing on a fresh EndeavourOS/Arch system
 
 ```sh
 git clone git@github.com:etokiyra/caelestia-rice.git
 cd caelestia-rice
 
-# 1. Requirements (guided pacman/AUR install)
+# 1. Requirements — one batched pacman call + AUR helper pass, skips installed
 ./install.sh --packages
 
 # 2. Apply the rice
 ./install.sh
 
-# 3. Log out → pick the Caelestia session (or, in an existing Hyprland session):
-hyprctl reload
+# 3. Log out → pick the Caelestia session (or, inside Hyprland: nothing to do,
+#    the installer already restarted the shell and reloaded the compositor)
 ```
 
-`./install.sh` backs everything it touches up to `~/.config-backup-rice-<timestamp>`,
-copies the configs, installs the wallpaper, pins the scheme
-(`caelestia scheme set -n dynamic -f hard -m dark -v tonalspot`) and re-applies
-the wallpaper so the colours regenerate exactly like on the source machine.
-Use `--dry-run` to preview the steps first.
+`./install.sh` backs everything it touches up to `~/.config-backup-rice-<timestamp>`
+before changing anything and copies the configs. It never pins colors — both
+wallpapers are just added to `~/Pictures/Wallpapers`, and a wallpaper is only
+applied on a machine where none is set yet. Use `--dry-run` to preview the steps.
+
+Because the scheme is dynamic, switching wallpapers
+
+```sh
+caelestia wallpaper -f ~/Pictures/Wallpapers/wallhaven-pomg5p.jpg
+```
+
+…instantly re-themes the shell, the terminal palette, GTK/Qt accents and the
+borders. The install folder keeps the palette regeneration details
+(`configs/hypr/scheme/`) so everything works from a cold boot too.
+
+### What the installer does NOT touch
+
+- `~/.bashrc` / `~/.bash_profile` — fish is the login shell of this rice; the
+  installer only writes `~/.config/fish/config.fish` and the greeting function.
+  If the login shell is still bash, switch once: `chsh -s /usr/bin/fish`.
+- Your other dotfiles (Discord clients, Spicetify, micro, zed, …) — only the
+  directories listed in `TARGETS` are replaced, and all of them are copied to
+  the backup folder first.
+- Display manager — on EndeavourOS enable whichever login manager you use with
+  `systemctl enable`; the Caelestia session shows up on its own.
+
+### Inside a live session
+
+Run `./install.sh` while logged in and it finishes the job for you:
+a running Caelestia shell is restarted (`caelestia shell -k` + `-d` — it caches
+its config and its file watcher dies with the config dir swap) and Hyprland
+gets `hyprctl reload`. Skipping that is what makes an install look stale —
+no blur, no transparency — until the next logout.
 
 ### Manual package list (`--packages`)
 
 Repo packages:
 
-> hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk foot fuzzel fastfetch
-> starship grim slurp swappy wl-clipboard cliphist trash-cli polkit-gnome
-> gnome-keyring gammastep geoclue bluez-utils networkmanager brightnessctl ddcutil
-> libcava libqalculate power-profiles-daemon dart-sass ttf-jetbrains-mono-nerd
-> ttf-material-symbols-variable ttf-rubik-vf ttf-cascadia-code-nerd
-> papirus-icon-theme dolphin eza zoxide direnv lazygit
+> fish hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk foot fuzzel
+> fastfetch starship grim slurp swappy wl-clipboard cliphist trash-cli
+> polkit-gnome gnome-keyring gammastep geoclue bluez-utils networkmanager
+> brightnessctl ddcutil libqalculate power-profiles-daemon dart-sass psmisc
+> btop cava ttf-jetbrains-mono-nerd ttf-material-symbols-variable ttf-rubik-vf
+> ttf-cascadia-code-nerd papirus-icon-theme thunar eza zoxide direnv lazygit
 
 AUR packages (paru/yay):
 
 > caelestia-cli caelestia-shell quickshell-git qt6-m3shapes-git qtengine gpu-screen-recorder
 
-`./install.sh` also enables `power-profiles-daemon` in systemd/dinit when it
-finds it. The Caelestia battery panel needs that daemon; on non-systemd
-installs D-Bus activation alone will not start it.
-
-### Login manager (Artix/dinit: greetd + tuigreet)
-
-The repo ships the greetd config used on the source machine
-(`configs/greetd/config.toml`): tuigreet with clock and remembered username,
-launching `start-hyprland` on **VT 7**. VT 7 matters: Artix runs gettys on
-tty1–tty6, and a greetd on VT 1 will fight `agetty` for the terminal.
-
-```sh
-sudo ./setup-greetd.sh          # or: --dry-run first
-sudo reboot
-```
-
-The script removes `lightdm-dinit` explicitly, installs
-`greetd greetd-tuigreet greetd-dinit`, writes `/etc/greetd/config.toml` with
-the chosen VT (`--vt N`, default 7) and enables the `greetd` dinit service.
-It never starts greetd inside the running session, so nothing fights over the
-current VT. Rollback from a TTY:
-
-```sh
-sudo dinitctl disable greetd
-sudo pacman -S --needed lightdm-dinit
-sudo dinitctl enable lightdm
-sudo reboot
-```
-
-If you must use a VT below 7, remove that VT from `ACTIVE_CONSOLES` in
-`/etc/dinit.d/config/console.conf` first.
-
-### Networking (Artix/dinit: ConnMan → NetworkManager)
-
-`networkmanager-dinit` provides the `NetworkManager` service (capital N).
-Install it **before** stopping ConnMan, otherwise pacman cannot download it:
-
-```sh
-sudo pacman -S --needed networkmanager-dinit   # while still online
-sudo dinitctl disable connmand && sudo dinitctl stop connmand
-sudo dinitctl enable NetworkManager && sudo dinitctl start NetworkManager
-nmtui   # or: nmcli device wifi connect "SSID" password "…"
-```
-
-Or run `sudo ./setup-network.sh`, which does the same checks in the right
-order and is a no-op once NetworkManager is already active.
-
-ConnMan's saved Wi-Fi profiles are not imported (they live root-only in
-`/var/lib/connman`); reconnect once and NM stores the keyring entry.
-
-Everything else (terminal fonts/icons, pipewire session, portals) comes with
-`caelestia install` if you prefer the official base first — in that case run
-it **before** `./install.sh` so the riced files win.
-
 ## Notes
 
-- **Hyprland Lua config** is native since Hyprland 0.55 — any current `hyprland`
-  build works (tested on 0.56.2).
-- `configs/hypr/hyprland/execs.lua` expects Arch-style paths
-  (`/usr/lib/polkit-gnome/...`, `/usr/lib/geoclue-2.0/demos/agent`) — on
-  non-Arch distros adjust those two lines.
+- **Hyprland Lua config** is native since Hyprland 0.55 — any current build works.
+- `configs/hypr/hyprland/execs.lua` uses Arch-style paths
+  (`/usr/lib/polkit-gnome/...`, `/usr/lib/geoclue-2.0/demos/agent`); on other
+  distros adjust those two lines.
 - `configs/caelestia/monitors/eDP-1/shell.json` is keyed to the laptop panel
-  `eDP-1`; on different hardware, rename or drop that folder.
-- The browser line (`hypr-vars.lua`) uses the **Zen flatpak**
-  (`flatpak install app.zen_browser.zen`); change it if you use something else.
-- Optional niceties used by `.bashrc` are guarded: ble.sh
-  (`~/.local/share/blesh/ble.sh`), cargo, deno — install them if you want them.
-- To re-generate/refresh the scheme after a wallpaper change:
-  `caelestia wallpaper -f ~/Pictures/Wallpapers/wallhaven-qrgqyq.jpg`
+  `eDP-1`; on different hardware rename or drop that folder.
+- Apps: defaults live in `configs/hypr/variables.lua`
+  (`browser = "firefox"`); user overrides go in
+  `~/.config/caelestia/hypr-vars.lua`, merged on top — keep that file to
+  preferences only, don't put app paths there.
+- The fish greeting lives in `configs/fish/functions/fish_greeting.fish`
+  (autoloaded). Never define `fish_greeting` inside `config.fish` — that inline
+  definition shadows the autoload and breaks the greeting.
+- Personal fish tweaks go in `~/.config/caelestia/user-config.fish`, sourced at
+  the end of `config.fish`.
 
 ## Tweaking knobs
 
@@ -164,6 +152,6 @@ it **before** `./install.sh` so the riced files win.
 ## Credits
 
 - [Caelestia dotfiles](https://github.com/caelestia-dots/caelestia) — the base dots & shell
-- [Hyprland](https://github.com/hyprwm/Hyprland) — compositor (Lua config)
+- [Hyprland](https://github.com/hyprwm/Hyprland) — the compositor (Lua config)
 - [Bibata cursor](https://github.com/ful1e5/Bibata_Cursor) by ful1e5
-- Wallpaper from wallhaven (`qrgqyq`)
+- Wallpapers from wallhaven (`qrgqyq`, `pomg5p`)
